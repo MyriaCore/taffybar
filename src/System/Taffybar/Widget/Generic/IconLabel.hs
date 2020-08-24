@@ -15,8 +15,9 @@ module System.Taffybar.Widget.Generic.IconLabel
 import qualified Data.Text as T
 import qualified Text.Regex as R
 import Control.Monad.IO.Class
-import GI.Gtk hiding (Label)
+import GI.Gtk hiding (Label, boxNew)
 import System.Taffybar.Widget.Generic.Icon
+import System.Taffybar.Widget.Generic.Box
 
 
 -- | Creates a GTK widget with the specified Text.
@@ -73,7 +74,7 @@ instance Functor IconLabel where
 -- Icons will be turned into GTK Image/Icon widgets,
 -- and Labels will be turned into GTK Labels.
 iconLabelToWidget :: (MonadIO io) => IconLabel T.Text -> io Widget
-iconLabelToWidget (Icon i) = iconWidgetNew i
+iconLabelToWidget (Icon i) = iconImageWidgetNewFromName i
 iconLabelToWidget (Label l) = labelNew (Just l) >>= toWidget
 
 -- | Takes a string and returns a list of icon names or labels.
@@ -83,8 +84,9 @@ iconLabelToWidget (Label l) = labelNew (Just l) >>= toWidget
 parseIconEmbeddedText :: String -> [IconLabel String]
 parseIconEmbeddedText text = 
   case R.matchRegexAll (R.mkRegex "<icon>([^<>]+)</icon>") text of
-       Nothing -> [Label text]
-       Just ("", _, unparsed, [icon]) ->
-         Icon icon : parseIconEmbeddedText unparsed
-       Just (preceding, _, unparsed, [icon]) ->
-         [ Label preceding, Icon icon ] ++ parseIconEmbeddedText unparsed
+    Nothing -> [Label text]
+    Just (_, _, _, []) -> [Label text]
+    Just ("", _, unparsed, icon:_) ->
+      Icon icon : parseIconEmbeddedText unparsed
+    Just (preceding, _, unparsed, icon:_) ->
+      [ Label preceding, Icon icon ] ++ parseIconEmbeddedText unparsed
